@@ -6,8 +6,9 @@ const app = express();
 
 const server = app.listen(port);
 
+app.use(express.static(__dirname + '/public'));
 
-const wsServer = new ws.Server({ httpServer: server });
+const wsServer = new ws.Server({ server });
 
 wsServer.on('connection', function connection(socket) {
     socket.on('message', data => {
@@ -18,5 +19,3 @@ wsServer.on('connection', function connection(socket) {
     });
 });
 
-const httpServer = http.createServer(function(request, result) {});
-httpServer.listen()
