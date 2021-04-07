@@ -7,19 +7,10 @@
             font-family: monospace
         }
 
-        .logElement {
+        #wsCanvas {
             float: left;
-            overflow: auto;
             border: 1px solid black;
-            padding: 10px;
             margin: 10px;
-            max-height: 400px;
-            min-width: 300px;
-        }
-
-        .logElement ul {
-            padding-left: 0px;
-            margin-left: 5px;
         }
 
     </style>
@@ -31,11 +22,12 @@
     </div>
 
     <script type="text/javascript">
-        const url = "ws:limitless-wildwood-48190.herokuapp.com"
+        const url = "ws:fast-harbor-60324.herokuapp.com"
         window.onload = function(e) {
             console.log("Starting...");
 
             const canvas = document.getElementById("wsCanvas");
+            console.log(canvas);
             const drawingContext = canvas.getContext("2d");
             drawingContext.fillStyle = "rgba(0, 0, 0, 1)"
 
@@ -43,32 +35,73 @@
             serverSocket.onopen = function (event) {
                 console.log("Server socket opened!")
             };
-            socketClientOut.onmessage = function (event) {
+            serverSocket.onmessage = function (event) {
                 console.log("Received " + event.data);
 
                 // interpret message here
                 messageObject = JSON.parse(event.data);
                 const x = messageObject.x;
                 const y = messageObject.y;
+                const xPrevious = messageObject.xPrevious;
+                const yPrevious = messageObject.yPrevious;
 
-                drawingContext.moveTo(x, y);
-                drawingContext.fillRect(x, y, 1, 1);
+
+                if (xPrevious == -1) {
+                    drawingContext.beginPath();
+                    drawingContext.arc(x, y, 2.5, 0, 2 * Math.PI, false);
+                    drawingContext.fill();
+                } else {
+                    drawingContext.beginPath();
+                    drawingContext.arc(xPrevious, yPrevious, 2.5, 0, 2 * Math.PI, false);
+                    drawingContext.fill();
+
+                    drawingContext.beginPath();
+                    drawingContext.moveTo(xPrevious, yPrevious);
+                    drawingContext.lineTo(x, y);
+                    drawingContext.lineWidth = 5;
+                    drawingContext.stroke();
+
+                    drawingContext.beginPath();
+                    drawingContext.arc(x, y, 2.5, 0, 2 * Math.PI, false);
+                    drawingContext.fill()
+                }
             };
 
             var isDrawing = false
-            canvas.addEventListener('mousedown' e => {
+            var xPrevious = -1;
+            var yPrevious = -1;
+            canvas.addEventListener('mousedown', e => {
                 isDrawing = true;
-            });
 
-            canvas.addEventListener('mouseup' e => {
-                isDrawing = false;
-            });
-
-            canvas.addEventListener('mousemove' e => {
                 serverSocket.send(JSON.stringify({
+                    xPrevious: -1,
+                    yPrevious: -1,
                     x: e.offsetX,
                     y: e.offsetY
                 }));
+
+                xPrevious = e.offsetX;
+                yPrevious = e.offsetY;
+            });
+
+            canvas.addEventListener('mouseup', e => {
+                isDrawing = false;
+                xPrevious = -1;
+                yPrevious = -1;
+            });
+
+            canvas.addEventListener('mousemove', e => {
+                if (isDrawing) {
+                    serverSocket.send(JSON.stringify({
+                        xPrevious: xPrevious,
+                        yPrevious: yPrevious,
+                        x: e.offsetX,
+                        y: e.offsetY
+                    }));
+
+                    xPrevious = e.offsetX;
+                    yPrevious = e.offsetY;
+                }
             });
         };
 
