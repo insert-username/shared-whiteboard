@@ -13,11 +13,24 @@
             margin: 10px;
         }
 
+        .appContainer {
+            width: 100%;
+            float: left;
+        }
+
     </style>
 </head>
 
 <body>
-    <div>
+    <div class="appContainer">
+        <label for="InputColor">Color</label>
+        <input type="color" id="inputColor" name="InputColor" value="#000000">
+
+        <label for="InputDiameter">Brush Size</label>
+        <input type="range" id="inputDiameter" name="InputDiameter" value="5">
+    </div>
+
+    <div class="appContainer">
         <canvas id="wsCanvas" width=400 height=400></canvas>
     </div>
 
@@ -28,9 +41,10 @@
             console.log("Starting...");
 
             const canvas = document.getElementById("wsCanvas");
+            const colorPicker = document.getElementById("inputColor");
+            const radiusPicker = document.getElementById("inputColor");
             console.log(canvas);
             const drawingContext = canvas.getContext("2d");
-            drawingContext.fillStyle = "rgba(0, 0, 0, 1)"
 
             var serverSocket = new WebSocket(url);
             serverSocket.onopen = function (event) {
@@ -45,25 +59,30 @@
                 const y = messageObject.y;
                 const xPrevious = messageObject.xPrevious;
                 const yPrevious = messageObject.yPrevious;
+                const color = messageObject.color;
+                const diameter = messageObject.diameter;
+                const radius = messageObject.diameter / 2;
 
+                drawingContext.fillStyle = color;
+                drawingContext.strokeStyle = color;
 
                 if (xPrevious == -1) {
                     drawingContext.beginPath();
-                    drawingContext.arc(x, y, 2.5, 0, 2 * Math.PI, false);
+                    drawingContext.arc(x, y, radius, 0, 2 * Math.PI, false);
                     drawingContext.fill();
                 } else {
                     drawingContext.beginPath();
-                    drawingContext.arc(xPrevious, yPrevious, 2.5, 0, 2 * Math.PI, false);
+                    drawingContext.arc(xPrevious, yPrevious, radius, 0, 2 * Math.PI, false);
                     drawingContext.fill();
 
                     drawingContext.beginPath();
                     drawingContext.moveTo(xPrevious, yPrevious);
                     drawingContext.lineTo(x, y);
-                    drawingContext.lineWidth = 5;
+                    drawingContext.lineWidth = diameter;
                     drawingContext.stroke();
 
                     drawingContext.beginPath();
-                    drawingContext.arc(x, y, 2.5, 0, 2 * Math.PI, false);
+                    drawingContext.arc(x, y, radius, 0, 2 * Math.PI, false);
                     drawingContext.fill()
                 }
             };
@@ -78,7 +97,9 @@
                     xPrevious: -1,
                     yPrevious: -1,
                     x: e.offsetX,
-                    y: e.offsetY
+                    y: e.offsetY,
+                    color: inputColor.value,
+                    diameter: inputDiameter.value
                 }));
 
                 xPrevious = e.offsetX;
@@ -97,7 +118,9 @@
                         xPrevious: xPrevious,
                         yPrevious: yPrevious,
                         x: e.offsetX,
-                        y: e.offsetY
+                        y: e.offsetY,
+                        color: inputColor.value,
+                        diameter: inputDiameter.value
                     }));
 
                     xPrevious = e.offsetX;
