@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        html {
+            font-family: monospace
+        }
+
+        .logElement {
+            float: left;
+            overflow: auto;
+            border: 1px solid black;
+            padding: 10px;
+            margin: 10px;
+            max-height: 400px;
+            min-width: 300px;
+        }
+
+        .logElement ul {
+            padding-left: 0px;
+            margin-left: 5px;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div>
+        <canvas id="wsCanvas" width=400 height=400></canvas>
+    </div>
+
+    <script type="text/javascript">
+        const url = "ws:limitless-wildwood-48190.herokuapp.com"
+        window.onload = function(e) {
+            console.log("Starting...");
+
+            const canvas = document.getElementById("wsCanvas");
+            const drawingContext = canvas.getContext("2d");
+            drawingContext.fillStyle = "rgba(0, 0, 0, 1)"
+
+            var serverSocket = new WebSocket(url);
+            serverSocket.onopen = function (event) {
+                console.log("Server socket opened!")
+            };
+            socketClientOut.onmessage = function (event) {
+                console.log("Received " + event.data);
+
+                // interpret message here
+                messageObject = JSON.parse(event.data);
+                const x = messageObject.x;
+                const y = messageObject.y;
+
+                drawingContext.moveTo(x, y);
+                drawingContext.fillRect(x, y, 1, 1);
+            };
+
+            var isDrawing = false
+            canvas.addEventListener('mousedown' e => {
+                isDrawing = true;
+            });
+
+            canvas.addEventListener('mouseup' e => {
+                isDrawing = false;
+            });
+
+            canvas.addEventListener('mousemove' e => {
+                serverSocket.send(JSON.stringify({
+                    x: e.offsetX,
+                    y: e.offsetY
+                }));
+            });
+        };
+
+    </script>
+</body>
+</html>
