@@ -58,6 +58,8 @@
             const nameField = document.getElementById("nameField");
             const otherNamesList = document.getElementById("otherNames");
 
+            // store a queue of "missed" commands while waiting for image to load.
+            const drawCommandQueue = [];
             const interpretClientAssignment = function(clientAssignment) {
                 if (clientAssignment.name) {
                     nameField.value = clientAssignment.name;
@@ -71,6 +73,11 @@
                         drawingContext.drawImage(image, 0, 0);
                         drawingContext.canvas.hasLoaded = true;
                         drawingContext.canvas.removeAttribute('hidden');
+
+                        while(drawCommandQueue.length > 0) {
+                            console.log("Applying queued draw command");
+                            interpretDrawCommand(drawCommandQueue.shift(), drawingContext);
+                        }
                     };
                     image.src = clientAssignment.canvas;
                 }
@@ -96,6 +103,7 @@
                             }));
                     }, 5000);
             };
+
             serverSocket.onmessage = function (event) {
                 // interpret message here
                 messageObject = JSON.parse(event.data);
@@ -103,10 +111,11 @@
                 //console.log(messageObject);
                 if (messageObject.drawCommand) {
                     if (!drawingContext.canvas.hasLoaded) {
-                        throw new TypeError("Received a draw command when the canvas has not loaded.");
+                        console.log("Queueing draw command until canvas has loaded.");
+                        drawCommandQueue.push(messageObject);
+                    } else {
+                        interpretDrawCommand(messageObject.drawCommand, drawingContext);
                     }
-
-                    interpretDrawCommand(messageObject.drawCommand, drawingContext);
                 } else if (messageObject.clientAssignment) {
                     interpretClientAssignment(messageObject.clientAssignment);
                 } else {
