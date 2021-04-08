@@ -1,8 +1,13 @@
+const { createCanvas, loadImage } = require('canvas')
+const canvas_modifier = require('./public/canvas-modifier.js')
 const uuid = require('uuid')
 const express = require('express')
 const ws = require('ws')
 const randomWords = require('random-words')
 const port = process.env.PORT || 8080;
+
+const canvas = createCanvas(800, 800);
+const canvasContext = canvas.getContext('2d');
 
 const app = express();
 
@@ -27,7 +32,10 @@ wsServer.on('connection', function connection(socket) {
     socket.send(
         JSON.stringify(
             { clientAssignment:
-                { name: clientName }
+                {
+                    name: clientName,
+                    canvas: canvas.toDataURL()
+                }
             }));
 
     wsServer.clients.forEach(client => {
@@ -59,6 +67,7 @@ wsServer.on('connection', function connection(socket) {
 
         // forward draw commands to the other clients.
         if (messageObject.drawCommand) {
+            canvas_modifier(messageObject.drawCommand, canvasContext);
             wsServer.clients
                 .forEach(client => {
                     client.send(data);

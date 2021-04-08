@@ -31,7 +31,7 @@
     </div>
 
     <div class="appContainer">
-        <canvas id="wsCanvas" width=400 height=400></canvas>
+        <canvas id="wsCanvas" width=400 height=400 hidden hasLoaded=false></canvas>
     </div>
 
     <div>
@@ -40,6 +40,7 @@
         </ul>
     </div>
 
+    <script src="canvas-modifier.js"></script>
     <script type="text/javascript">
         //const url = "ws:localhost:8080"
         const protocol = window.location.href.startsWith("https") ?
@@ -57,42 +58,21 @@
             const nameField = document.getElementById("nameField");
             const otherNamesList = document.getElementById("otherNames");
 
-            const interpretDrawCommand = function(drawCommand) {
-                const x = drawCommand.x;
-                const y = drawCommand.y;
-                const xPrevious = drawCommand.xPrevious;
-                const yPrevious = drawCommand.yPrevious;
-                const color = drawCommand.color;
-                const diameter = drawCommand.diameter;
-                const radius = drawCommand.diameter / 2;
-
-                drawingContext.fillStyle = color;
-                drawingContext.strokeStyle = color;
-
-                if (xPrevious == -1) {
-                    drawingContext.beginPath();
-                    drawingContext.arc(x, y, radius, 0, 2 * Math.PI, false);
-                    drawingContext.fill();
-                } else {
-                    drawingContext.beginPath();
-                    drawingContext.arc(xPrevious, yPrevious, radius, 0, 2 * Math.PI, false);
-                    drawingContext.fill();
-
-                    drawingContext.beginPath();
-                    drawingContext.moveTo(xPrevious, yPrevious);
-                    drawingContext.lineTo(x, y);
-                    drawingContext.lineWidth = diameter;
-                    drawingContext.stroke();
-
-                    drawingContext.beginPath();
-                    drawingContext.arc(x, y, radius, 0, 2 * Math.PI, false);
-                    drawingContext.fill()
-                }
-            }
-
             const interpretClientAssignment = function(clientAssignment) {
                 if (clientAssignment.name) {
                     nameField.value = clientAssignment.name;
+                }
+
+                if (clientAssignment.canvas) {
+                    const image = new Image();
+                    image.onload = () => {
+                        drawingContext.canvas.width = image.width;
+                        drawingContext.canvas.height = image.height;
+                        drawingContext.drawImage(image, 0, 0);
+                        drawingContext.canvas.hasLoaded = true;
+                        drawingContext.canvas.removeAttribute('hidden');
+                    };
+                    image.src = clientAssignment.canvas;
                 }
 
                 if (clientAssignment.otherNames) {
@@ -122,7 +102,11 @@
 
                 //console.log(messageObject);
                 if (messageObject.drawCommand) {
-                    interpretDrawCommand(messageObject.drawCommand);
+                    if (!drawingContext.canvas.hasLoaded) {
+                        throw new TypeError("Received a draw command when the canvas has not loaded.");
+                    }
+
+                    interpretDrawCommand(messageObject.drawCommand, drawingContext);
                 } else if (messageObject.clientAssignment) {
                     interpretClientAssignment(messageObject.clientAssignment);
                 } else {
