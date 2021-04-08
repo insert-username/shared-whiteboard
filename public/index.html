@@ -106,6 +106,12 @@
             var serverSocket = new WebSocket(url);
             serverSocket.onopen = function (event) {
                 console.log("Server socket opened!")
+
+                setInterval(() => {
+                        serverSocket.send(JSON.stringify({
+                                keepAlive: 1
+                            }));
+                    }, 5000);
             };
             serverSocket.onmessage = function (event) {
                 // interpret message here

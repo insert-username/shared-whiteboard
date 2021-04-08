@@ -18,7 +18,7 @@ wsServer.on('connection', function connection(socket) {
 
     socket.id = uuid.v4();
 
-    clientName = randomWords({ exactly: 3, join: '-'});
+    clientName = randomWords({ exactly: 2, join: '-'});
     clientNames[socket.id] = clientName;
 
     console.log("New client connected, clientNames are now: ");
@@ -39,9 +39,6 @@ wsServer.on('connection', function connection(socket) {
                 });
             otherClientNames = otherClients.map(oc => clientNames[oc.id]);
 
-            console.log("For client: " + clientNames[client.id] + " other names are:");
-            console.log(otherClientNames);
-
             messageObject = { clientAssignment: {
                     otherNames: otherClientNames
                 }};
@@ -52,6 +49,12 @@ wsServer.on('connection', function connection(socket) {
 
     socket.on('message', data => {
         messageObject = JSON.parse(data);
+
+        if (messageObject.keepAlive) {
+            // keeping the connection open/heroku app up, so ignore.
+            console.log("Keepalive from client: " + clientNames[socket.id]);
+            return true;
+        }
 
 
         // forward draw commands to the other clients.
