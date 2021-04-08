@@ -34,9 +34,15 @@
         <canvas id="wsCanvas" width=400 height=400></canvas>
     </div>
 
+    <div>
+        <input type="text" id="nameField">
+        <ul id="otherNames">
+        </ul>
+    </div>
+
     <script type="text/javascript">
-        //const url = "ws:localhost:8080"
-        const url = "wss:fast-harbor-60324.herokuapp.com"
+        const url = "ws:localhost:8080"
+        //const url = "wss:fast-harbor-60324.herokuapp.com"
         window.onload = function(e) {
             console.log("Starting...");
 
@@ -45,23 +51,17 @@
             const radiusPicker = document.getElementById("inputColor");
             console.log(canvas);
             const drawingContext = canvas.getContext("2d");
+            const nameField = document.getElementById("nameField");
+            const otherNamesList = document.getElementById("otherNames");
 
-            var serverSocket = new WebSocket(url);
-            serverSocket.onopen = function (event) {
-                console.log("Server socket opened!")
-            };
-            serverSocket.onmessage = function (event) {
-                //console.log("Received " + event.data);
-
-                // interpret message here
-                messageObject = JSON.parse(event.data);
-                const x = messageObject.x;
-                const y = messageObject.y;
-                const xPrevious = messageObject.xPrevious;
-                const yPrevious = messageObject.yPrevious;
-                const color = messageObject.color;
-                const diameter = messageObject.diameter;
-                const radius = messageObject.diameter / 2;
+            const interpretDrawCommand = function(drawCommand) {
+                const x = drawCommand.x;
+                const y = drawCommand.y;
+                const xPrevious = drawCommand.xPrevious;
+                const yPrevious = drawCommand.yPrevious;
+                const color = drawCommand.color;
+                const diameter = drawCommand.diameter;
+                const radius = drawCommand.diameter / 2;
 
                 drawingContext.fillStyle = color;
                 drawingContext.strokeStyle = color;
@@ -85,6 +85,41 @@
                     drawingContext.arc(x, y, radius, 0, 2 * Math.PI, false);
                     drawingContext.fill()
                 }
+            }
+
+            const interpretClientAssignment = function(clientAssignment) {
+                if (clientAssignment.name) {
+                    nameField.value = clientAssignment.name;
+                }
+
+                if (clientAssignment.otherNames) {
+                    var newOtherNames = "";
+                    clientAssignment.otherNames.forEach(n => {
+                        newOtherNames = newOtherNames + "<li>" + n + "</li>";
+                    });
+
+                    otherNamesList.innerHTML = newOtherNames;
+
+                }
+            };
+
+            var serverSocket = new WebSocket(url);
+            serverSocket.onopen = function (event) {
+                console.log("Server socket opened!")
+            };
+            serverSocket.onmessage = function (event) {
+                // interpret message here
+                messageObject = JSON.parse(event.data);
+
+                //console.log(messageObject);
+                if (messageObject.drawCommand) {
+                    interpretDrawCommand(messageObject.drawCommand);
+                } else if (messageObject.clientAssignment) {
+                    interpretClientAssignment(messageObject.clientAssignment);
+                } else {
+                    throw new TypeError("Unable to interpret messageObject: " + JSON.stringify(messageObject));
+                }
+
             };
 
             var isDrawing = false
@@ -93,14 +128,14 @@
             canvas.addEventListener('mousedown', e => {
                 isDrawing = true;
 
-                serverSocket.send(JSON.stringify({
+                serverSocket.send(JSON.stringify({ drawCommand: {
                     xPrevious: -1,
                     yPrevious: -1,
                     x: e.offsetX,
                     y: e.offsetY,
                     color: inputColor.value,
                     diameter: inputDiameter.value
-                }));
+                }}));
 
                 xPrevious = e.offsetX;
                 yPrevious = e.offsetY;
@@ -114,14 +149,14 @@
 
             canvas.addEventListener('mousemove', e => {
                 if (isDrawing) {
-                    serverSocket.send(JSON.stringify({
+                    serverSocket.send(JSON.stringify({ drawCommand: {
                         xPrevious: xPrevious,
                         yPrevious: yPrevious,
                         x: e.offsetX,
                         y: e.offsetY,
                         color: inputColor.value,
                         diameter: inputDiameter.value
-                    }));
+                    }}));
 
                     xPrevious = e.offsetX;
                     yPrevious = e.offsetY;
