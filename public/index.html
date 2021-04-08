@@ -41,8 +41,11 @@
     </div>
 
     <script type="text/javascript">
-        const url = "ws:localhost:8080"
-        //const url = "wss:fast-harbor-60324.herokuapp.com"
+        //const url = "ws:localhost:8080"
+        const protocol = window.location.href.startsWith("https") ?
+            "wss" :
+            "ws";
+        const url = protocol + ":" + window.location.hostname + ":" + window.location.port; //fast-harbor-60324.herokuapp.com"
         window.onload = function(e) {
             console.log("Starting...");
 
