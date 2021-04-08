@@ -112,7 +112,7 @@
                 if (messageObject.drawCommand) {
                     if (!drawingContext.canvas.hasLoaded) {
                         console.log("Queueing draw command until canvas has loaded.");
-                        drawCommandQueue.push(messageObject);
+                        drawCommandQueue.push(messageObject.drawCommand);
                     } else {
                         interpretDrawCommand(messageObject.drawCommand, drawingContext);
                     }
